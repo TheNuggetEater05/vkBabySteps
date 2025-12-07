@@ -19,7 +19,10 @@ namespace je
 
 	private:
 		VkInstance instance = VK_NULL_HANDLE;
+		VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 
-		void createInstance(const char* appName, SDL_Window* window);
+		void createInstance(const char* appName);
+		bool checkValidationLayerSupport() const;
+		void createDebugMessenger();
 	};
 }

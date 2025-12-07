@@ -24,8 +24,9 @@ namespace je
 		VkDevice device = VK_NULL_HANDLE;
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 		VkQueue graphicsQueue = VK_NULL_HANDLE;
+		VkQueue presentQueue = VK_NULL_HANDLE;
 
-		VkSurfaceKHR surface = VK_NULL_HANDLE;
+		const VkSurfaceKHR surface = VK_NULL_HANDLE;
 
 		void getPhysicalDevice(const VkInstance& instance);
 
@@ -33,6 +34,10 @@ namespace je
 		void retrieveQueues();
 		void createLogicalDevice();
 
+		void logSurfaceInfo();
+
 		const char* getDeviceType(const int type) const;
+
+		bool checkValidationLayerSupport() const;
 	};
 }

@@ -4,6 +4,17 @@
 #include <vector>
 #include <SDL3/SDL_log.h>
 
+#ifdef _DEBUG
+constexpr bool validationLayersEnabled = true;
+const std::vector<const char*> validationLayers =
+{
+	"VK_LAYER_KHRONOS_validation"
+};
+#else
+constexpr bool validationLayersEnabled = false;
+const std::vector<const char*> validationLayers = {};
+#endif
+
 namespace je
 {
 	JeDevice::JeDevice(const VkInstance& instance, VkSurfaceKHR surfaceKHR) : surface(surfaceKHR)
@@ -48,12 +59,12 @@ namespace je
 			{
 				integratedGPU = physicalDevices[i];
 			}
+		}
 
-			if (physicalDevice == nullptr)
-			{
-				SDL_Log("Failed to find discrete GPU, falling back to integrated");
-				physicalDevice = integratedGPU;
-			}
+		if (physicalDevice == nullptr)
+		{
+			SDL_Log("Failed to find discrete GPU, falling back to integrated");
+			physicalDevice = integratedGPU;
 		}
 	}
 	QueueFamilyIndices JeDevice::findQueueFamilies()
@@ -75,12 +86,8 @@ namespace je
 			vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
 			if (presentSupport)
 			{
-				VkSurfaceCapabilitiesKHR surfaceCapabilities{};
-				vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
-
-				SDL_Log("Surface max image count: %u", surfaceCapabilities.maxImageCount);
-				SDL_Log("Surface current extent: %u x %u", surfaceCapabilities.currentExtent.width, surfaceCapabilities.currentExtent.height);
 				indices.presentFamily = i;
+				logSurfaceInfo();
 			}
 
 			if (indices.isComplete())
@@ -94,26 +101,54 @@ namespace je
 		QueueFamilyIndices indices = findQueueFamilies();
 
 		vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
+		vkGetDeviceQueue(device, indices.presentFamily, 0, &presentQueue);
 	}
 	void JeDevice::createLogicalDevice()
 	{
 		QueueFamilyIndices indices = findQueueFamilies();
 
 		float queuePriority = 1.0f;
+		std::vector<VkDeviceQueueCreateInfo> queueInfos;
 
-		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
-		queueCreateInfo.queueCount = 1;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
+		if (indices.graphicsFamily == indices.presentFamily)
+		{
+			VkDeviceQueueCreateInfo graphicsQueueCreateInfo{};
+			graphicsQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			graphicsQueueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+			graphicsQueueCreateInfo.queueCount = 1;
+			graphicsQueueCreateInfo.pQueuePriorities = &queuePriority;
+			queueInfos.push_back(graphicsQueueCreateInfo);
+		}
+		else
+		{
+			VkDeviceQueueCreateInfo graphicsQueueCreateInfo{};
+			graphicsQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			graphicsQueueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+			graphicsQueueCreateInfo.queueCount = 1;
+			graphicsQueueCreateInfo.pQueuePriorities = &queuePriority;
+			queueInfos.push_back(graphicsQueueCreateInfo);
+
+			VkDeviceQueueCreateInfo presentQueueCreateInfo{};
+			presentQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			presentQueueCreateInfo.queueFamilyIndex = indices.presentFamily;
+			presentQueueCreateInfo.queueCount = 1;
+			presentQueueCreateInfo.pQueuePriorities = &queuePriority;
+			queueInfos.push_back(presentQueueCreateInfo);
+		}
 
 		VkPhysicalDeviceFeatures physicalDeviceFeatures{};
 
 		VkDeviceCreateInfo deviceCreateInfo{};
 		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
-		deviceCreateInfo.queueCreateInfoCount = 1;
+		deviceCreateInfo.pQueueCreateInfos = queueInfos.data();
+		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueInfos.size());
 		deviceCreateInfo.pEnabledFeatures = &physicalDeviceFeatures;
+
+		if (validationLayersEnabled)
+		{
+			deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+			deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
+		}
 
 		std::vector<const char*> deviceExtensions;
 		deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -123,6 +158,38 @@ namespace je
 
 		if (vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create logical device");
+	}
+	void JeDevice::logSurfaceInfo()
+	{
+		if (surface != VK_NULL_HANDLE)
+		{
+			VkSurfaceCapabilitiesKHR capabilities{};
+			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
+
+			uint32_t formatCount = 0;
+			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+
+			std::vector<VkSurfaceFormatKHR> formats(formatCount);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
+
+			SDL_Log("Surface supports %u formats:", formatCount);
+			for (int i = 0; i < formatCount; i++)
+			{
+				SDL_Log("\tFormat %u: VkFormat=%d, ColorSpace=%d", i, formats[i].format, formats[i].colorSpace);
+			}
+
+			uint32_t modeCount = 0;
+			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &modeCount, nullptr);
+
+			std::vector<VkPresentModeKHR> modes(modeCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &modeCount, modes.data());
+
+			SDL_Log("Surface supports %u present modes:", modeCount);
+			for (int i = 0; i < modeCount; i++)
+			{
+				SDL_Log("\tPresentMode %u: %d", i, modes[i]);
+			}
+		}
 	}
 	const char* JeDevice::getDeviceType(const int type) const
 	{
@@ -144,7 +211,9 @@ namespace je
 			return "CPU";
 			break;
 		default:
+			return "UNKNOWN";
 			break;
 		}
 	}
+	
 }
