@@ -5,10 +5,12 @@
     <ClCompile Include="je_window.cpp" />
     <ClCompile Include="je_app.cpp" />
     <ClCompile Include="je_instance.cpp" />
+    <ClCompile Include="je_device.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="je_window.hpp" />
     <ClInclude Include="je_app.hpp" />
     <ClInclude Include="je_instance.hpp" />
+    <ClInclude Include="je_device.hpp" />
   </ItemGroup>
 </Project>

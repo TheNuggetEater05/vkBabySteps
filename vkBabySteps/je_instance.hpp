@@ -12,10 +12,13 @@ namespace je
 		JeInstance(const char* appName, SDL_Window* window);
 		~JeInstance();
 
+		JeInstance(const JeInstance&) = delete;
+		JeInstance& operator=(const JeInstance&) = delete;
+
 		VkInstance get() const { return instance; };
 
 	private:
-		VkInstance instance;
+		VkInstance instance = VK_NULL_HANDLE;
 
 		void createInstance(const char* appName, SDL_Window* window);
 	};

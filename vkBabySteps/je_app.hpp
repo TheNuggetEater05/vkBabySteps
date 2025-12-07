@@ -6,6 +6,7 @@
 
 #include "je_window.hpp"
 #include "je_instance.hpp"
+#include "je_device.hpp"
 
 namespace je
 {
@@ -22,11 +23,11 @@ namespace je
 
 		JeWindow& window() { return *jeWindow; };
 		const JeWindow& window() const { return *jeWindow; };
-		// JeInstance& instance() { return *jeInstance; };
 
 	private:
 		std::unique_ptr<JeWindow> jeWindow;
 		std::unique_ptr<JeInstance> jeInstance;
+		std::unique_ptr<JeDevice> jeDevice;
 
 		bool quit = false;
 

@@ -91,12 +91,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="je_app.cpp" />
+    <ClCompile Include="je_device.cpp" />
     <ClCompile Include="je_instance.cpp" />
     <ClCompile Include="je_window.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="je_app.hpp" />
+    <ClInclude Include="je_device.hpp" />
     <ClInclude Include="je_instance.hpp" />
     <ClInclude Include="je_window.hpp" />
   </ItemGroup>

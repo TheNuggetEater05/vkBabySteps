@@ -9,7 +9,11 @@ namespace je
 		initSDL();
 
 		jeWindow = std::make_unique<JeWindow>(appTitle, w, h);
-		jeInstance = std::make_unique<JeInstance>("vkBabySteps", jeWindow.get()->nativeWindow());
+		jeInstance = std::make_unique<JeInstance>("vkBabySteps", jeWindow->get());
+
+		jeWindow->createSurface(jeInstance->get());
+
+		jeDevice = std::make_unique<JeDevice>(jeInstance.get()->get(), jeWindow->getSurface());
 	}
 
 	JeApp::~JeApp()

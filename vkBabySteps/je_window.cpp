@@ -1,5 +1,7 @@
 #include "je_window.hpp"
 
+#include <stdexcept>
+
 namespace je
 {
 	JeWindow::JeWindow(const char* title, uint32_t w, uint32_t h)
@@ -10,6 +12,12 @@ namespace je
 	JeWindow::~JeWindow()
 	{
 		SDL_DestroyWindow(window);
+	}
+
+	void JeWindow::createSurface(VkInstance instance)
+	{
+		if (!SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface))
+			throw std::runtime_error("Failed to create surface");
 	}
 
 	void JeWindow::createWindow(const char* title, uint32_t w, uint32_t h)
